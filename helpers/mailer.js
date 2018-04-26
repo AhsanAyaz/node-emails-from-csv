@@ -2,13 +2,13 @@
  * Created by siraj on 5/03/2018.
  */
 
-var nodemailer = require('nodemailer');
-var fs = require('fs');
+const nodemailer = require('nodemailer');
+const fs = require('fs');
 
 const EMAIL_USER ='<your_email>';
 const EMAIL_PASS ='<your_password>';
 
-// smtp configuration for nodemailer
+/** smtp configuration for nodemailer */
 var transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
@@ -34,12 +34,12 @@ module.exports = {
 
     sendMail: async function (mailOptions) {
         try {
-            if(true) {
-                let info = await transporter.sendMail(mailOptions);
-                console.log(info);
-            }
+            let info = await transporter.sendMail(mailOptions);
+            console.log(info);
+            return true;
         } catch (e) {
             console.log(e);
+            return false;
         }
     }
 };
