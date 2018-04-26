@@ -1,0 +1,25 @@
+{
+  "name": "node-emails-from-csv",
+  "version": "1.0.0",
+  "description": "A simple NodeJS aplication that helps sending emails for events. Uses CSV files for target users.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "csv",
+    "modus",
+    "script"
+  ],
+  "author": "ahsan.ubitian@gmail.com",
+  "repository": {
+    "url": "https://github.com/AhsanAyaz/node-emails-from-csv"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.6.0",
+    "csv": "^2.0.0",
+    "handlebars": "^4.0.11",
+    "nodemailer": "^4.6.4"
+  }
+}
