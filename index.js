@@ -10,9 +10,11 @@ const handlebars = require('handlebars');
 // app/email specific variables
 const csvRecords = [];
 let eventRegistrations = [];
+let failedRecords = [];
 const emailColIndexInCSV = 2;   // based on the data in your csv file
 const nameColIndexInCSV = 1;   // based on the data in your csv file
 const sourceCSVFile = path.join(__dirname, './files/test.csv');
+const outCSVFile = path.join(__dirname, './files/error.csv');
 const emailTemplate = 'registration-email.html';    // will be used when sending emails
 const senderEmailAddress = 'admin@mydomain.com';    // this will show up in the target user's inbox as who sent the email
 const emailVars = {
@@ -28,9 +30,8 @@ const emailSubject = `Registration - ${emailVars.name}`;
  * @author Ahsan Ayaz
  * @desc Entry method for the script
  */
-const startExecution = async() => {
+const startExecution = async () => {
     await readCSVFile()
-    parseCSVAndCreateEmailRows();
     await sendEmailsToTargetUsers(); 
     console.log('** Emails sent **');
 }
@@ -55,18 +56,27 @@ const readCSVFile = () => {
 }
 
 /**
- * @author Ahsan Ayaz
- * @desc Creates an array containing properties needed in the email extracted out from the
- * CSV data which we already pushed to csvRows
+ * @author Siraj Haq
+ * @desc Writes into CSV file for failed records
+ * Creates a records error.csv file for the data passed
+ * @returns {Promise} which gets resolved when data is written in csv
  */
-const parseCSVAndCreateEmailRows = () => {
-    csvRecords.map((regItem) => {
-        eventRegistrations.push({
-            name: regItem[nameColIndexInCSV],
-            email: regItem[emailColIndexInCSV]
-        });
+const writeCSVFile = (records) => {
+    return new Promise((resolve, reject) => {
+        try {
+            csv.stringify(records, { header: true }, (err, output) => {
+                if (err) throw err;
+                fs.writeFile(outCSVFile, output, (err) => {
+                  if (err) throw err;
+                  console.log('csv file saved.');
+                  resolve();
+                });
+            });
+        } catch (ex) {
+            console.log(ex);
+            reject(ex);
+        }
     });
-    eventRegistrations.splice(0, 1);
 }
 
 /**
@@ -76,43 +86,55 @@ const parseCSVAndCreateEmailRows = () => {
  * @returns {Promise} which gets resolved once all the emails have been sent.
  */
 const sendEmailsToTargetUsers = async () => {
+    eventRegistrations = csvRecords;
+    failedRecords = [csvRecords[0]]; //add header for failed records csv
+    eventRegistrations.splice(0, 1);
     // uncomment the below chunk and put your email & name for testing
-    // nsRegistrations = [{
+    // eventRegistrations = [{
     //     name: "Test User",
     //     email: 'test@test.com'
     // }];
-    return new Promise((resolve, reject) => {
-        mailHelper.readHTMLTemplate(emailTemplate, async function (err, html) {
-            if (!err) {
-                const template = handlebars.compile(html);
-                for (let i =0, len = eventRegistrations.length; i < len; ++i) {
-                    const registration = eventRegistrations[i];
-                    const replacements = {
-                        userName: registration.name,
-                        eventName: emailVars.name,
-                        eventVenue: emailVars.venue,
-                        eventDate: emailVars.date,
-                        eventTime: emailVars.time,
-                        eventVenueLink: emailVars.venueLink
-                    };
-        
-                    const htmlToSend = template(replacements);
-                    const mailOptions = {
-                        from: senderEmailAddress,
-                        to: registration.email,
-                        subject: emailSubject,
-                        html: htmlToSend
-                    };
-        
-                    await mailHelper.sendMail(mailOptions);
+    return new Promise(async (resolve, reject) => {
+        try{
+            const rawHtml = await mailHelper.readHTMLTemplate(__dirname + "/templates/" + emailTemplate);
+            const template = handlebars.compile(rawHtml);
+            for (let i = 0, len = eventRegistrations.length; i < len; ++i) {
+                const registration = eventRegistrations[i];
+                const replacements = {
+                    userName: registration[nameColIndexInCSV],
+                    eventName: emailVars.name,
+                    eventVenue: emailVars.venue,
+                    eventDate: emailVars.date,
+                    eventTime: emailVars.time,
+                    eventVenueLink: emailVars.venueLink
+                };
+    
+                const htmlToSend = template(replacements);
+                const mailOptions = {
+                    from: senderEmailAddress,
+                    to: registration[emailColIndexInCSV],
+                    subject: emailSubject,
+                    html: htmlToSend
+                };
+    
+                let emailResponse = await mailHelper.sendMail(mailOptions);
+                if (!emailResponse) {
+                    //Failure Case: Push Failed records in an array
+                    failedRecords.push(eventRegistrations[i]);
                 }
-                resolve();
             }
-            else {
-                console.log(err);
-                reject(err);
+
+            if(failedRecords.length > 1) {
+                //Write into csv file if records failed
+                await writeCSVFile(failedRecords);
             }
-        });
+
+            resolve();
+        } catch (ex) {
+            console.log(ex);
+            reject(ex)
+        }
+        
     });
 }
 
