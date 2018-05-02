@@ -21,9 +21,9 @@ var transporter = nodemailer.createTransport({
 
 module.exports = {
 
-    readHTMLTemplate: function (templateName) {
+    readHTMLTemplate: function (templatePath) {
         return new Promise((resolve, reject) => {
-            fs.readFile(__dirname + "/../templates/" + templateName, {encoding: 'utf-8'}, function (err, html) {
+            fs.readFile(templatePath, {encoding: 'utf-8'}, function (err, html) {
                 if (err) {
                     reject(err);
                 }

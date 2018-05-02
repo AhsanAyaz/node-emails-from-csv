@@ -96,7 +96,7 @@ const sendEmailsToTargetUsers = async () => {
     // }];
     return new Promise(async (resolve, reject) => {
         try{
-            const rawHtml = await mailHelper.readHTMLTemplate(emailTemplate);
+            const rawHtml = await mailHelper.readHTMLTemplate(__dirname + "/templates/" + emailTemplate);
             const template = handlebars.compile(rawHtml);
             for (let i = 0, len = eventRegistrations.length; i < len; ++i) {
                 const registration = eventRegistrations[i];
