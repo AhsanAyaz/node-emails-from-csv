@@ -21,14 +21,16 @@ var transporter = nodemailer.createTransport({
 
 module.exports = {
 
-    readHTMLTemplate: function (templateName, callback) {
-        fs.readFile(__dirname + "/../templates/" + templateName, {encoding: 'utf-8'}, function (err, html) {
-            if (err) {
-                callback(err, null);
-            }
-            else {
-                callback(null, html);
-            }
+    readHTMLTemplate: function (templateName) {
+        return new Promise((resolve, reject) => {
+            fs.readFile(__dirname + "/../templates/" + templateName, {encoding: 'utf-8'}, function (err, html) {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve(html);
+                }
+            });
         });
     },
 
